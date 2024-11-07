@@ -2,8 +2,9 @@
 -- https://discord.gg/gefkY22s5N
 
 -- DONATIONS (so i can keep publishing good stuff):
--- BTC 13w7tJEYAPJoexhr2XoMZJ3b2TEUCcQqtD
--- ETH 0x9c919799ac83ba629d791c0888aa03ed046ba4c6
+-- BTC 			13w7tJEYAPJoexhr2XoMZJ3b2TEUCcQqtD
+-- ETH 			0x9c919799ac83ba629d791c0888aa03ed046ba4c6
+-- PIX(BRASIL ONLY) 	b278351b-e336-4a0a-87ca-bff187a6a5fa
 
 -- Interface
 local Finity = isfile and (isfile("finitylib.lua") and loadstring(readfile("finitylib.lua"))())
