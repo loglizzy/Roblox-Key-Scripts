@@ -1,3 +1,13 @@
+local scriptIndexes = {
+    [12378910761] = "https://raw.githubusercontent.com/loglizzy/Roblox-Key-Scripts/refs/heads/main/Ninjutsu%3A%20Master%20of%20Elements"
+}
+
+local targetScriptUrl = scriptIndexes[game.PlaceId]
+if not targetScriptUrl then
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/loglizzy/Roblox-monetized-scripts/refs/heads/main/Error%20Popup"))()
+    return
+end
+
 -- Instances
 local Frame = Instance.new("Frame")
 local UIListLayout = Instance.new("UIListLayout")
@@ -5,6 +15,7 @@ local label = Instance.new("TextLabel")
 local input = Instance.new("TextBox")
 local url = Instance.new("TextBox")
 local UICorner = Instance.new("UICorner")
+local UIStroke = Instance.new("UIStroke")
 local copy = Instance.new("TextButton")
 
 -- Properties
@@ -56,13 +67,18 @@ url.BorderSizePixel = 0
 url.Position = UDim2.new(0, 4, 0, 4)
 url.Size = UDim2.new(1, -8, 0, 20)
 url.ClearTextOnFocus = false
-url.Font = Enum.Font.Unknown
+url.Font = Enum.Font.RobotoMono
 url.Text = "https://discord.gg/xSnGMYV4"
 url.TextColor3 = Color3.new(1, 1, 1)
 url.TextSize = 14
 
 UICorner.Parent = Frame
 UICorner.CornerRadius = UDim.new(0, 6)
+
+UIStroke.Parent = Frame
+UIStroke.Thickness = 2
+UIStroke.Transparency = 0.8
+UIStroke.Color = Color3.new(0,0,0)
 
 copy.Parent = Frame
 copy.BackgroundColor3 = Color3.new(1, 1, 0)
@@ -75,36 +91,39 @@ copy.TextColor3 = Color3.new(0, 0, 0)
 copy.TextSize = 14
 
 -- Start
-local inviteUrl = "https://discord.gg/gefkY22s5N"
+local inviteUrl = "https://discord.gg/xSnGMYV4"
 url.Text = inviteUrl
 
 local inviteCode = inviteUrl:sub(#("https://discord.gg/") + 1, #inviteUrl)
 local HttpService = game:GetService("HttpService")
-request({
-    Url = "http://127.0.0.1:6463/rpc?v=1",
-    Method = "POST",
-    Headers = {
-        ["Content-Type"] = "application/json",
-        ["Origin"] = "https://discord.com"
-    },
-    Body = HttpService:JSONEncode({
-        cmd = "INVITE_BROWSER",
-        args = {
-            code = inviteUrl
+if request then
+    task.spawn(request, {
+        Url = "http://127.0.0.1:6463/rpc?v=1",
+        Method = "POST",
+        Headers = {
+            ["Content-Type"] = "application/json",
+            ["Origin"] = "https://discord.com"
         },
-        nonce = HttpService:GenerateGUID(false)
+        Body = HttpService:JSONEncode({
+            cmd = "INVITE_BROWSER",
+            args = {
+                code = inviteCode
+            },
+            nonce = HttpService:GenerateGUID(false)
+        })
     })
-})
+end
 
 Frame.Parent = game.CoreGui.RobloxGui
 
-local targetScriptUrl = ...
 local targetScriptLoad
 spawn(function()
-    targetScriptLoad = loadstring(game:HttpGet(targetScriptUrl))()
+    targetScriptLoad = loadstring(game:HttpGet(targetScriptUrl))
 end)
-local originalKey = "MAURICIO"
+
+local originalKey = "GLUBGLUB10"
 input:GetPropertyChangedSignal("Text"):Connect(function()
+    input.Text = input.Text:upper()
     if input.Text == originalKey then
         Frame:Remove()
         
@@ -117,7 +136,13 @@ input:GetPropertyChangedSignal("Text"):Connect(function()
 end)
 
 copy.Activated:Connect(function()
-    copytoclipboard(inviteUrl)
+    if not setclipboard then
+        copy.Text = "Manually copy the text above!"
+        copy.BackgroundColor3 = Color3.new(.8, 0, 0)
+        return
+    end
+    
+    setclipboard(inviteUrl)
     copy.Text = "Copied invite!"
     copy.BackgroundColor3 = Color3.fromRGB(170, 255, 0)
 end)
