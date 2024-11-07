@@ -1,0 +1,123 @@
+-- Instances
+local Frame = Instance.new("Frame")
+local UIListLayout = Instance.new("UIListLayout")
+local label = Instance.new("TextLabel")
+local input = Instance.new("TextBox")
+local url = Instance.new("TextBox")
+local UICorner = Instance.new("UICorner")
+local copy = Instance.new("TextButton")
+
+-- Properties
+Frame.AnchorPoint = Vector2.new(0.5, 0.5)
+Frame.BackgroundColor3 = Color3.new(0.211765, 0.211765, 0.211765)
+Frame.BorderColor3 = Color3.new(0, 0, 0)
+Frame.BorderSizePixel = 0
+Frame.ClipsDescendants = true
+Frame.Position = UDim2.new(0.5, 0, 0.5, 0)
+Frame.Size = UDim2.new(0, 200, 0, 108)
+
+UIListLayout.Parent = Frame
+UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+UIListLayout.Padding = UDim.new(0, 4)
+
+label.Name = "label"
+label.Parent = Frame
+label.BackgroundColor3 = Color3.new(1, 1, 1)
+label.BackgroundTransparency = 1
+label.BorderColor3 = Color3.new(0, 0, 0)
+label.BorderSizePixel = 0
+label.Size = UDim2.new(1, -8, 0, 28)
+label.Font = Enum.Font.RobotoMono
+label.Text = "Get your key from the discord <b>#🔑-script-key</b> channel"
+label.TextColor3 = Color3.new(1, 1, 1)
+label.TextSize = 14
+label.TextWrapped = true
+label.TextXAlignment = Enum.TextXAlignment.Left
+
+input.Name = "input"
+input.Parent = Frame
+input.BackgroundColor3 = Color3.new(0.211765, 0.211765, 0.211765)
+input.BorderColor3 = Color3.new(0.392157, 0.392157, 0.392157)
+input.Position = UDim2.new(0, 4, 0, 28)
+input.Size = UDim2.new(1, -8, 0, 20)
+input.Font = Enum.Font.RobotoMono
+input.PlaceholderText = "Place key from discord here"
+input.Text = ""
+input.TextColor3 = Color3.new(1, 1, 1)
+input.TextSize = 12
+
+url.Name = "url"
+url.Parent = Frame
+url.BackgroundColor3 = Color3.new(0.313726, 0.313726, 0.313726)
+url.BorderColor3 = Color3.new(0.392157, 0.392157, 0.392157)
+url.BorderSizePixel = 0
+url.Position = UDim2.new(0, 4, 0, 4)
+url.Size = UDim2.new(1, -8, 0, 20)
+url.ClearTextOnFocus = false
+url.Font = Enum.Font.Unknown
+url.Text = "https://discord.gg/xSnGMYV4"
+url.TextColor3 = Color3.new(1, 1, 1)
+url.TextSize = 14
+
+UICorner.Parent = Frame
+UICorner.CornerRadius = UDim.new(0, 6)
+
+copy.Parent = Frame
+copy.BackgroundColor3 = Color3.new(1, 1, 0)
+copy.BorderColor3 = Color3.new(0, 0, 0)
+copy.BorderSizePixel = 0
+copy.Size = UDim2.new(1, -8, 0, 20)
+copy.Font = Enum.Font.RobotoMono
+copy.Text = "Copy to clipboard"
+copy.TextColor3 = Color3.new(0, 0, 0)
+copy.TextSize = 14
+
+-- Start
+local inviteUrl = "https://discord.gg/xSnGMYV4"
+url.Text = inviteUrl
+
+local inviteCode = inviteUrl:sub(#("https://discord.gg/") + 1, #inviteUrl)
+local HttpService = game:GetService("HttpService")
+request({
+    Url = "http://127.0.0.1:6463/rpc?v=1",
+    Method = "POST",
+    Headers = {
+        ["Content-Type"] = "application/json",
+        ["Origin"] = "https://discord.com"
+    },
+    Body = HttpService:JSONEncode({
+        cmd = "INVITE_BROWSER",
+        args = {
+            code = inviteUrl
+        },
+        nonce = HttpService:GenerateGUID(false)
+    })
+})
+
+Frame.Parent = game.CoreGui.RobloxGui
+
+local targetScriptUrl = ...
+local targetScriptLoad
+spawn(function()
+    targetScriptLoad = loadstring(game:HttpGet(targetScriptUrl))()
+end)
+local originalKey = "MAURICIO"
+input:GetPropertyChangedSignal("Text"):Connect(function()
+    if input.Text == originalKey then
+        Frame:Remove()
+        
+        while not targetScriptLoad do
+            task.wait()
+        end
+        
+        targetScriptLoad()
+    end
+end)
+
+copy.Activated:Connect(function()
+    copytoclipboard(inviteUrl)
+    copy.Text = "Copied invite!"
+    copy.BackgroundColor3 = Color3.fromRGB(170, 255, 0)
+end)
