@@ -1,0 +1,512 @@
+-- Made by @loglizzy in ZeusForge Game Studio
+-- https://discord.gg/5UQ899Bm
+
+-- Interface
+local Finity = isfile("finitylib.lua") and loadstring(readfile("finitylib.lua"))()
+if not Finity then
+    Finity = game:HttpGet("https://raw.githubusercontent.com/bloodball/UI-Librarys/refs/heads/main/Finity%20UI%20Lib")
+    writefile("finitylib.lua", Finity)
+    Finity = loadstring(Finity)()
+end
+
+local finityFlags = {}
+local FinityWindow = Finity.new(true)
+FinityWindow.ChangeToggleKey(Enum.KeyCode.Semicolon)
+
+local myPlayer = game.Players.LocalPlayer
+local questStartTime
+local QuestProgress = myPlayer.QuestData.QuestProgress
+QuestProgress:GetPropertyChangedSignal("Value"):Connect(function()
+    if QuestProgress.Value ~= 0 then return end
+    questStartTime = tick()
+end)
+
+local Farm = FinityWindow:Category("Farm")
+local Quest = Farm:Sector("Quest")
+local QuestBotState
+local QuestBotRemaining
+local QuestBotElapsed
+local stopTeleporting = false
+local lastQuestOption
+Quest:Cheat(
+	"Checkbox", -- Type
+	"Auto complete", -- Name
+	function(state) -- Callback function
+		finityFlags.QuestBotEnabled = state
+		if not state then
+		    QuestBotState.label.Text = ""
+		    QuestBotRemaining.label.Text = ""
+		    QuestBotElapsed.label.Text = ""
+	    end
+		
+		while finityFlags.QuestBotEnabled do
+		    WaitTillFreeTeleporting()
+		    
+            local level = myPlayer.STATS.Level.Value
+		   
+		    local questOption = finityFlags.QuestBotQuest
+            local quest = GetHardestQuest(
+                if questOption == "Auto" then level 
+                    else tonumber(questOption:sub(5, #questOption))
+            )
+                
+		    local questProgress = myPlayer.QuestData.QuestProgress.Value
+		    if questProgress == 0 or not questStartTime then
+		        questStartTime = tick()
+		    end
+		    
+		    if questProgress == quest.Goal.Maximum then
+		        break
+		    end
+		    
+            if not finityFlags.QuestBotEnabled then
+                break
+            end
+            
+            if myPlayer.QuestData.QuestName ~= quest.Name then
+                game.ReplicatedStorage.Packages.Knit.Services.QuestSystemService.RE.StartDialogue:FireServer(
+                    {
+                        Name = quest.Name,
+                    },
+                    quest.Target
+                )
+            end
+            
+            local enemy
+            repeat
+                enemy = GetEnemyByName(quest.Target)
+                QuestBotRemaining.label.Text = `<b>{(quest.Goal.Maximum-questProgress)-1}</b> Remaining to complete`
+                if lastQuestOption == questOption then
+                    enemy = nil
+                    break
+                end
+                
+                QuestBotState.label.Text = `1/2 Finding <b>{quest.Target}</b>...`
+            until (task.wait() and enemy) or not finityFlags.QuestBotEnabled
+
+            if enemy and finityFlags.QuestBotEnabled then 
+                QuestBotState.label.Text = `2/2 Killing <b>{quest.Target}</b>...`
+                LoadQuestEnemy(quest, enemy)
+                KillEnemy(enemy)
+            end
+            
+            task.wait()
+        end
+	end
+)
+
+local enemyQuests = {}
+local function RequireQuest(v, resume)
+    local info = require(v)
+    if info.Type ~= "Quest" then
+        coroutine.resume(resume)
+        return
+    end
+
+    local enemyName, goal = next(info.Details)
+    info.Goal = goal
+    info.Target = enemyName
+    info.Level = goal.Requirement
+
+    if info.Level then
+        enemyQuests[enemyName] = info
+    else
+        warn(enemyName)
+    end
+    
+    coroutine.resume(resume)
+end
+
+local conversations = game:GetService("ReplicatedStorage").DataModule.Conversations:GetChildren()
+for i, v in conversations do
+    task.spawn(RequireQuest, v, coroutine.running())
+end
+
+for i = 1, #conversations do
+    coroutine.yield()
+end
+
+local questOptions = {}
+for _, v in enemyQuests do
+    table.insert(questOptions, v.Level)
+end
+
+table.sort(questOptions, function(a, b)
+    return a < b
+end)
+
+for i, v in questOptions do
+    questOptions[i] = `Lv. {v}`
+end
+
+table.insert(questOptions, 1, "Auto")
+
+finityFlags.QuestBotQuest = "Auto"
+Quest:Cheat("Dropdown", "Select quest", function(option)
+    lastQuestOption = finityFlags.QuestBotQuest
+	finityFlags.QuestBotQuest = option
+end, {
+	options = questOptions
+})
+
+QuestBotState = Quest:Cheat("Label", "")
+QuestBotState.label.RichText = true
+
+QuestBotRemaining = Quest:Cheat("Label", "")
+QuestBotRemaining.label.RichText = true
+
+QuestBotElapsed = Quest:Cheat("Label", "")
+QuestBotElapsed.label.RichText = true
+spawn(function()
+    while true do
+        if not finityFlags.QuestBotEnabled then
+            task.wait()
+            continue
+        end
+        
+        QuestBotElapsed.label.Text = `<b>{math.floor((tick()-questStartTime)*10)/10}s</b> Of quest time`
+        task.wait()
+    end
+end)
+
+local Combat = FinityWindow:Category("Combat")
+local Killaura = Combat:Sector("Kill Aura")
+local lastTargeted = {}
+Killaura:Cheat(
+	"Checkbox", -- Type
+	"Enabled", -- Name
+	function(state) -- Callback function
+	    finityFlags.KillauraEnabled = state
+	    while finityFlags.KillauraEnabled do
+	        local myCharacter = myPlayer.Character
+	        local myRoot = myCharacter and myCharacter:FindFirstChild("HumanoidRootPart")
+	        if not myRoot then
+	            task.wait()
+	            continue
+	        end
+	        
+	        if finityFlags.KillauraPlayers then
+	            for i, v in game.Players:GetPlayers() do
+	                if v == myPlayer then continue end
+	                local STATS = v:FindFirstChild("STATS")
+	                if STATS and STATS.Level.Value < 30 then continue end
+	                
+	                local vCharacter = v.Character
+	                local vRoot = vCharacter and vCharacter:FindFirstChild("HumanoidRootPart")
+	                if not vRoot then continue end
+	                
+	                if not finityFlags.KillauraIgnoreRange and (vRoot.Position - myRoot.Position).magnitude > finityFlags.KillauraRange then continue end
+	                
+	                local vHumanoid = vCharacter:FindFirstChild("Humanoid")
+	                if vHumanoid.Health <= 0 then continue end
+	                
+	                local lastTick = lastTargeted[vCharacter]
+	                if lastTick and tick() - lastTick <= finityFlags.KillauraRetryKillCooldown then
+	                    continue
+                    end
+
+	                lastTargeted[vCharacter] = tick()
+	                stopTeleporting = true
+	                
+	                local savedCords = myRoot.CFrame
+	                for i = 1, 10 do
+	                    myRoot.CFrame = CFrame.new(
+	                        (vRoot.CFrame * CFrame.new(0, -5, 0)).Position,
+	                        vRoot.Position
+	                    )
+	                    
+	                    for i = 1, 5 do
+	                        AttackClient()
+	                    end
+    
+                        task.wait()
+	                end
+	                
+                    stopTeleporting = false
+                    
+	                myRoot.CFrame = savedCords
+	                
+	                break
+	            end
+            end
+            
+            if finityFlags.KillauraNPCs then
+                local enemy = GetNearestEnemy(if finityFlags.KillauraIgnoreRange then math.huge else finityFlags.KillauraRange)
+                if not enemy then
+                    task.wait()
+                    continue
+                end
+                
+                local savedCords = myRoot.CFrame
+                KillEnemy(enemy)
+                myRoot.CFrame = savedCords
+                task.wait()
+            end
+	        
+            task.wait()
+	    end
+	end
+)
+
+local KillauraRangeSlider
+Killaura:Cheat(
+	"Checkbox", -- Type
+	"Ignore range", -- Name
+	function(state) -- Callback function
+	    KillauraRangeSlider.frame.Visible = not state
+	    finityFlags.KillauraIgnoreRange = state
+	end
+)
+
+finityFlags.KillauraRange = 500/2
+KillauraRangeSlider = Killaura:Cheat("Slider", "Range", function(value)
+	finityFlags.KillauraRange = value
+end, {min = 0, max = 500, suffix = " studs"})
+
+finityFlags.KillauraRetryKillCooldown = 30/2
+Killaura:Cheat("Slider", "Retry killing cooldown", function(value)
+	finityFlags.KillauraRetryKillCooldown = value
+end, {min = 0, max = 30, suffix = "s"})
+
+Killaura:Cheat("Label", "Targets")
+
+Killaura:Cheat(
+	"Checkbox", -- Type
+	"   Players", -- Name
+	function(state) -- Callback function
+	    finityFlags.KillauraPlayers = state
+	end
+)
+
+Killaura:Cheat(
+	"Checkbox", -- Type
+	"   NPCs", -- Name
+	function(state) -- Callback function
+	    finityFlags.KillauraNPCs = state
+	end
+)
+
+-- Movement
+local Movement = FinityWindow:Category("Movement")
+local Speed = Movement:Sector("Speed")
+Speed:Cheat("Checkbox", "Modify speed", function(state)
+    finityFlags.ModifySpeed = state
+    while finityFlags.ModifySpeed do
+        local myCharacter = myPlayer.Character
+        local myHumanoid = myCharacter and myCharacter:FindFirstChild("Humanoid")
+        if not myHumanoid then
+            task.wait()
+            continue
+        end
+        
+        myHumanoid.WalkSpeed = finityFlags.ModifySpeedValue
+        task.wait()
+    end
+end)
+
+finityFlags.ModifySpeedValue = 200/2
+Speed:Cheat("Slider", "Speed value", function(value)
+	finityFlags.ModifySpeedValue = value
+end, {min = 0, max = 200, suffix = ""})
+
+-- Teleports
+local Teleports = FinityWindow:Category("Teleports")
+local Areas = Teleports:Sector("Areas")
+Areas:Cheat("Dropdown", "Select area", function(option)
+    myPlayer.Character:MoveTo(workspace.Area[`Area_{option}`].WorldPivot.Position)
+end, {
+    options = (function()
+        local options = {}
+        for _, v in workspace.Area:GetChildren() do
+            local i = tonumber(v.Name:sub(6, 10))
+            options[i] = i
+        end
+        
+        return options
+    end)()
+})
+
+local Places = Teleports:Sector("Places")
+for i, v in workspace.Map.Places:GetChildren() do
+    local position
+    for i, v in v:GetDescendants() do
+        if v:IsA("Model") then
+            local modelPos = v.WorldPivot.Position
+            if position and modelPos.Y < position.Y then continue end
+            
+            position = modelPos
+        end
+    end
+
+    if not position then continue end
+    if v.Name == "FightMap" then
+        position = Vector3.new(-156, 4, -5978)
+    end
+    
+    Places:Cheat("Button", v.Name, function()
+        myPlayer.Character:MoveTo(position)
+    end)
+end
+
+-- Credits
+local Credits = FinityWindow:Category("Credits")
+local Info = Credits:Sector("Info")
+Info:Cheat("Label", "<b>loglizzy</b> on discord").label.RichText = true
+Info:Cheat("Label", "<i><b>https://discord.gg/xSnGMYV4</b></i>").label.RichText = true
+Info:Cheat("Button", "Copy discord invite", function()
+    setclipboard("https://discord.gg/xSnGMYV4")
+end)
+
+-- Help
+local Help = FinityWindow:Category("Help")
+local Grinding = Help:Sector("Grinding")
+Grinding:Cheat("Label", "Just keep Quest Auto Complete enabled and you will have the max possible earnings in terms of exp & gold.")
+Grinding:Cheat("Label", "To avoid players killing you while farming you can enabled kill aura targeted on players in a short range.")
+Grinding:Cheat("Label", "Note: Current state of the Auto Complete is not the final one, i need some time to improve it to be ~%50 quickier.")
+Grinding:Cheat("Label", "Planned features: Farm Halloween candy; Kill player once he hits you(the only way to passively detect pvp enabled).")
+
+
+-- Funcs
+function GetNearestEnemy(maxDistance: number): (Model, number)
+    maxDistance = maxDistance or math.huge
+    
+    local myCharacter = myPlayer.Character
+    local myPosition = myCharacter:GetPivot().Position
+    local nearest
+    local nearestDistance
+    for i, v in workspace.Map.EnemyModel:GetChildren() do
+        if v.Humanoid.Health <= 0 then continue end
+        
+        local vRoot = v:FindFirstChild("HumanoidRootPart")
+        if not vRoot then continue end
+
+        local distance = (vRoot.Position - myPosition).magnitude
+        if distance > maxDistance then continue end
+        if nearest and distance > nearestDistance then continue end
+        
+        nearest = v
+        nearestDistance = distance
+    end
+
+    return nearest, nearestDistance
+end
+
+function GetStrongestEnemy(maxLevel: number): Model
+    local strongest
+    local strongestLevel = 0
+    for i, v in workspace.Map.EnemyModel:GetChildren() do
+        if v.Humanoid.Health <= 0 then continue end
+
+        local info = v.Name:split("-")
+        local level = tonumber(info[3])
+        if not level then continue end
+
+        if level > maxLevel then continue end
+        if strongestLevel > level then continue end
+
+        if v.Humanoid.Health <= 0 then continue end
+        strongest = v
+        strongestLevel = level
+    end
+
+    return strongest
+end
+
+function GetLevelEnemy(searchLevel: number)
+    for i, v in workspace.Map.EnemyModel:GetChildren() do
+        if v.Humanoid.Health == 0 then continue end
+
+        local info = v.Name:split("-")
+        local level = tonumber(info[3])
+        if level == searchLevel then
+            return v
+        end
+    end
+end
+
+function _ApplyDashShield()
+    game.ReplicatedStorage.Packages.Knit.Services.SkillService.RF.DashEnergy:InvokeServer(369)
+end
+
+function ApplyDashShield()
+    task.spawn(_ApplyDashShield)
+end
+
+local Controllers = myPlayer.PlayerScripts.Game.Controllers
+local CombatController = require(Controllers.CombatController)
+function AttackClient()
+    CombatController:AttackClient(1, "Fist", nil)
+end
+
+function WaitTillFreeTeleporting()
+    while stopTeleporting do
+        task.wait()
+    end
+end
+
+local CharacterController = require(Controllers.CharacterController)
+function KillEnemy(enemy: Model, quest: {}?)
+    local myCharacter = myPlayer.Character
+    local myRoot = myCharacter.HumanoidRootPart
+    local enemyRoot = enemy.HumanoidRootPart
+    
+    WaitTillFreeTeleporting()
+    stopTeleporting = true
+    
+    local enemySize = enemy.Humanoid.HipHeight
+    while enemy.Humanoid.Health > 0 do
+        myRoot.CFrame = CFrame.new((enemyRoot.CFrame * CFrame.new(0, -enemySize, enemySize)).Position, enemyRoot.Position)
+        
+        -- TODO: Auto detect equipped weapon so the auto farm benefits from higher damage
+        for i = 1, 3 do
+            AttackClient()
+        end
+
+        task.wait()
+    end
+    
+    stopTeleporting = false
+end
+
+function GetEnemyByName(enemyName: string)
+    for i, v in workspace.Map.EnemyModel:GetChildren() do
+        if v.Humanoid.Health == 0 then continue end
+        if v.Name ~= enemyName then continue end
+
+        return v
+    end
+end
+
+funct+ion GetEnemyArea(enemyName: string)
+    return tonumber(enemyName:split("-")[1])
+end
+
+function GetEnemyLevel(enemyName: string)
+    return tonumber(enemyName:split("-")[3])
+end
+
+function GetEnemyQuest(enemyName: string)
+    return enemyQuests[enemyName]
+end
+
+function GetHardestQuest(maxLevel: number)
+    local hardest
+    for i, v in enemyQuests do
+        if v.Level > maxLevel then continue end
+        if hardest and v.Level < hardest.Level then continue end
+        hardest = v
+    end
+
+    return hardest
+end
+
+function LoadQuestEnemy(quest, enemy)
+    local myCharacter = myPlayer.Character
+    local myRoot = myCharacter.HumanoidRootPart
+    local enemyRoot = enemy:FindFirstChild("HumanoidRootPart")
+    while not enemyRoot do
+        myRoot.CFrame = workspace.InteractNPCs[quest.Name]:GetPivot()
+        task.wait()
+        enemyRoot = enemy:FindFirstChild("HumanoidRootPart")
+    end
+end/
