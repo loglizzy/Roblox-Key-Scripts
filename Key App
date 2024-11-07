@@ -75,7 +75,7 @@ copy.TextColor3 = Color3.new(0, 0, 0)
 copy.TextSize = 14
 
 -- Start
-local inviteUrl = "https://discord.gg/xSnGMYV4"
+local inviteUrl = "https://discord.gg/gefkY22s5N"
 url.Text = inviteUrl
 
 local inviteCode = inviteUrl:sub(#("https://discord.gg/") + 1, #inviteUrl)
