@@ -8,4 +8,4 @@ Now some feature issues:
 * Kill aura targeting for bosses not implemented
 * Auto farm & killaura MAY suddenly stop if enabled both
 
-all the problems i may find just need time, cause i have a lot of experience but also attention issues so im not productive
+Im not productive at all so any feature/bug may take long so i even want to fix it
