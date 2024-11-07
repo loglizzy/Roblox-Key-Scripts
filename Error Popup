@@ -1,0 +1,76 @@
+-- Instances
+local Frame = Instance.new("Frame")
+local UIListLayout = Instance.new("UIListLayout")
+local label = Instance.new("TextLabel")
+local games = Instance.new("TextBox")
+local UIPadding = Instance.new("UIPadding")
+local UICorner = Instance.new("UICorner")
+local TextButton = Instance.new("TextButton")
+
+-- Properties
+Frame.Parent = game.CoreGui.Roblox
+Frame.AnchorPoint = Vector2.new(0.5, 0.5)
+Frame.BackgroundColor3 = Color3.new(0.211765, 0.211765, 0.211765)
+Frame.BorderColor3 = Color3.new(0, 0, 0)
+Frame.BorderSizePixel = 0
+Frame.ClipsDescendants = true
+Frame.Position = UDim2.new(0.5, 0, 0.5, 0)
+Frame.Size = UDim2.new(0, 200, 0, 120)
+
+UIListLayout.Parent = Frame
+UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+UIListLayout.Padding = UDim.new(0, 4)
+
+label.Name = "label"
+label.Parent = Frame
+label.BackgroundColor3 = Color3.new(1, 1, 1)
+label.BackgroundTransparency = 1
+label.BorderColor3 = Color3.new(0, 0, 0)
+label.BorderSizePixel = 0
+label.Size = UDim2.new(1, -8, 0, 42)
+label.Font = Enum.Font.RobotoMono
+label.Text = "⚠️ You executed my script loader in an unsupported game, supported games list:"
+label.TextColor3 = Color3.new(1, 1, 1)
+label.TextSize = 14
+label.TextWrapped = true
+label.TextXAlignment = Enum.TextXAlignment.Left
+
+games.Name = "games"
+games.Parent = Frame
+games.BackgroundColor3 = Color3.new(0.117647, 0.117647, 0.117647)
+games.BorderColor3 = Color3.new(0.313726, 0.313726, 0.313726)
+games.Position = UDim2.new(0, 4, 0, 4)
+games.Size = UDim2.new(1, -8, 0, 42)
+games.ClearTextOnFocus = false
+games.Font = Enum.Font.Unknown
+games.MultiLine = true
+games.TextEditable = false
+games.Text = "Ninjutsu: Master of Elements\\nDeepwoken (soon)\\nAftermatch (soon)"
+games.TextColor3 = Color3.new(1, 1, 1)
+games.TextSize = 14
+games.TextWrapped = true
+games.TextXAlignment = Enum.TextXAlignment.Left
+
+UIPadding.Parent = games
+UIPadding.PaddingLeft = UDim.new(0, 4)
+
+UICorner.Parent = Frame
+UICorner.CornerRadius = UDim.new(0, 6)
+
+TextButton.Parent = Frame
+TextButton.BackgroundColor3 = Color3.new(0.666667, 0.666667, 0)
+TextButton.BorderColor3 = Color3.new(0, 0, 0)
+TextButton.BorderSizePixel = 0
+TextButton.Position = UDim2.new(0, 0, 0.833333313, 0)
+TextButton.Size = UDim2.new(1, -8, 0, 20)
+TextButton.Font = Enum.Font.Unknown
+TextButton.Text = "Close"
+TextButton.TextColor3 = Color3.new(0, 0, 0)
+TextButton.TextSize = 14
+
+-- Start
+TextButton.Activated:Connect(function()
+  Frame:Remove()
+end)
