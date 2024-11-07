@@ -43,6 +43,7 @@ label.Size = UDim2.new(1, -8, 0, 28)
 label.Font = Enum.Font.RobotoMono
 label.Text = "Get your key from the discord <b>#🔑-script-key</b> channel"
 label.TextColor3 = Color3.new(1, 1, 1)
+label.RichText = true
 label.TextSize = 14
 label.TextWrapped = true
 label.TextXAlignment = Enum.TextXAlignment.Left
